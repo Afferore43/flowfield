@@ -6,8 +6,8 @@ var yMove = 0.0;
 
 var scl = 0.001;
 var keySpeed = 0.05;
-var zSpeed = 0.005;
-var xSpeed = scl;
+var zSpeed = 0.001;
+var xSpeed = scl / 2.0;
 
 var moveNoise = true;
 var moveParticles = true;
@@ -18,27 +18,14 @@ var particleCount = 1000;
 var showInfo = false;
 var showHelp = false;
 
-function setup() {
-    document.body.style.backgroundColor = "black";
-    
-    colorMode(HSB, 255);
-    
-    createCanvas(windowWidth, windowHeight);
-}
-function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
-}
-
-
-
-function calculateForce(x,y) {
-    return noise(x*scl+xMove,y*scl+yMove,zMove);
-}
+const keyboard_controls = ["keyboard controls","","[f] fullscreen on/off","[i] show/hide info", "[?] show/hide keyboard controls", "[+/-] add/subtract 50 from max points","[arrows] move flowfield","[space] stop/star point movement","[n] stop/star flowfield movement","[r] set noise to random position"];
 
 function draw() {
     if(moveParticles) {
         if (particles.length < particleCount) {
             addParticles(1);
+        } else if(particles.length > particleCount) {
+            deleteParticles(1);
         }
         if(moveNoise) {
             zMove += zSpeed;
@@ -68,37 +55,44 @@ function draw() {
     }
     
     if(showHelp) {
-        t = ["keyboard controls","","[f] fullscreen on/off","[i] show/hide info", "[?] show/hide keyboard controls", "[+/-] add/delete 100 points","[arrows] move flowfield","[space] stop/star point movement","[n] stop/star noise movement","[r] set noise to random position"]
         var sx = 20;
         var sy = 20;
         
         fill(0);
-        rect(sx,sy,min(250,width),min(t.length*30, height));
+        rect(sx,sy,min(265,width),min(keyboard_controls.length*30, height));
         
         textSize(15);
         fill(0,0,255);
         
-        for(var i = 0; i<t.length; i++) {
-            
-            text(t[i],sx+10,sy+20+i*30);
+        for(var i = 0; i<keyboard_controls.length; i++) {
+            text(keyboard_controls[i],sx+10,sy+20+i*30);
         }
     }
 }
 
+function calculateForce(x,y) {
+    return noise(x*scl+xMove,y*scl+yMove,zMove);
+}
 function addParticles(num) {
     for(var i=0; i<num; i++) {
         particles.unshift(new Particle());
     }
 }
-
 function deleteParticles(num) {
     for(var i=0; i<num; i++) {
         particles.pop();
     }
 }
 
+function setup() {
+    createCanvas(windowWidth, windowHeight);
+    
+    colorMode(HSB, 255);
+}
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+}
 function keyPressed() {
-    console.log(keyCode);
   if (keyCode === 70) { // F
     var fs = fullscreen();
     fullscreen(!fs);
@@ -108,9 +102,12 @@ function keyPressed() {
           moveParticles = true;
       }
   } else if (keyCode === 187) { // +
-      addParticles(100);
+      particleCount += 50;
   } else if (keyCode === 189) { // -
-      deleteParticles(100);
+      particleCount -= 50;
+      if (particleCount < 1) {
+          particleCount = 1;
+      }
   } else if (keyCode === 191) { // ?
       showHelp = !showHelp;
       if(!showHelp) {
@@ -134,4 +131,3 @@ function keyPressed() {
     zMove = random();
   }
 }
-
