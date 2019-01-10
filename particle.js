@@ -19,7 +19,7 @@ function Particle() {
   
     this.calculateForce = function() {
         var force = calculateForce(this.pos.x,this.pos.y,this.z);
-        var vector = p5.Vector.fromAngle(force*TWO_PI*4);
+        var vector = p5.Vector.fromAngle(force*accMultiplier);
         this.applyForce(vector);
         this.setHue(force);
     }

@@ -1,37 +1,59 @@
-p5.disableFriendlyErrors = true;
+p5.disableFriendlyErrors = true; // maybe makes it faster?
 
+
+/////////
 // changebable in browser
-var scl = 0.001;
+/////////
+var scl = 0.001;    // scale of noisefield, [+/-] to zoom in/out
 
-var moveNoise = true;
-var moveParticles = true;
+var moveNoise = true;       //[n] is movement in noise space on
+var moveParticles = true;   //[space] is particle movement on
 
-var showInfo = false;
-var showHelp = false;
+var showInfo = false;   // [i] show debug info (fps, )
+var showHelp = false;   // [?] show keyboard controls
 
-var particleCount = 1000;
-var numberOfSlices = 5;
+var particleCount = 1000;   // max number of particles
+                            // [right/left arrow] add/subtract 50
 
+var numberOfSlices = 5;     // number of slices in noise space (along z-axis)
+                            // [c/v] change number of slices
+
+var visibility = 80;    // [,/.] alpha value of particles
+var deletionSpeed = 10; // [g/h] alpha value of black background drawn every
+                        // frame, between 0-255, lower means slower deletion
+/////////
+
+
+/////////
+// change in code for different behaviour 
+/////////
+const sclMultiplier = 1.2;  // [+/-] divide/multiply scl by this to zoom in/out
+
+const keySpeed = 0.05;  // movement per down key
+
+// movement per second
+const xSpeed = 0.0008;
+const ySpeed = 0.01;
+const zSpeed = 0.05;
+
+const sliceDistance = 0.005;    // distance between noise slices
+const maxspeed = 6;     // maxspeed of particles, independent of framerate 
+                        // (so higher framerate will make them go faster)
+
+const hueMultiplier = 500.0;    // particles will multiply noise result 
+                                // by this to get hue
+const accMultiplier = TWO_PI*4;
+/////////
+
+// position in noise field
 var zMove = 0.0;
 var xMove = 0.0;
 var yMove = 0.0;
 
-var visibility = 80;
-var deleteSpeed = 10;
-
-// change in code for different behaviour ()
-const sclMultiplier = 1.2;
-const keySpeed = 0.05;
-const xSpeed = 0.0008;
-const ySpeed = 0.01;
-const zSpeed = 0.05;
-const sliceDistance = 0.005;
-const maxspeed = 6;
-const hueMultiplier = 500.0;
-
-var particles = [];
-var timeLastFrame = 0.0;
-const keyboard_controls = ["keyboard controls","","[f] fullscreen on/off","[i]* show/hide info", "[?]* show/hide keyboard controls", "[right/left arrow] add/subtract 50 from max points","[w/s/d/a/q/e] move flowfield (y+/y-/x+/x-/z+/z-)","[+/-] zoom in/out","[space] stop/start point movement","[n] stop/start flowfield movement","[r] set noise to random position", "[p] set point number to max points","[1-9] set point number to 1000-9000","[c/v]* change number of slices","[,/.] change particle visibility (less/more)", "[g/h] change delete speed (slower/faster)", "[k] reset canvas", "", "* will reset canvas"];
+var particles = []; // array for particles
+var timeLastFrame = 0.0;    // record time ellapsed since last frame to move noise 
+                            // field with the same speed, independent of framerate
+const keyboard_controls = ["keyboard controls","","[f] fullscreen on/off","[i]* show/hide info", "[?]* show/hide keyboard controls", "[right/left arrow] add/subtract 50 from max points","[w/s/d/a/q/e] move flowfield (y+/y-/x+/x-/z+/z-)","[+/-] zoom in/out","[space] stop/start point movement","[n] stop/start flowfield movement","[r] set noise to random position", "[p] set point number to max points","[1-9] set point number to 1000-9000","[c/v]* change number of slices","[,/.] change particle visibility (less/more)", "[g/h] change deletion speed (slower/faster)", "[k] reset canvas", "", "* will reset canvas"];
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
@@ -47,25 +69,33 @@ function draw() {
     if(moveParticles) {
         var timePassed = (millis() - timeLastFrame) / 1000.0;
         timeLastFrame = millis();
+        
+        // add/delete particle, if there are not enough/too many
         if (particles.length < particleCount) {
             addParticles(1);
         } else if(particles.length > particleCount) {
             deleteParticles(1);
         }
+        
         if(moveNoise) {
             xMove += xSpeed * timePassed;
             yMove += ySpeed * timePassed;
             zMove += zSpeed * timePassed;
         }
-        background(0,0,0,deleteSpeed);
+        
+        background(0,0,0,deletionSpeed);
 
+        // loop through every particle
         for(var i=0; i<particles.length; i++) {
-            particles[i].calculateForce();
-            particles[i].update(timePassed);
-            particles[i].show();
-            particles[i].edges();
+            particles[i].calculateForce();  // calculate force from noise field
+                                            // will also set hue
+            particles[i].update();          // move particle
+            particles[i].show();            // draw particle
+            particles[i].edges();           // check if still in bounds
         }
     }
+    
+    // draw debug info panel
     if(showInfo) {
         const h = 70;
         const digitsAfterPoint = 4;
@@ -73,12 +103,13 @@ function draw() {
         rect(0,height-h,width-10,h-10)
         
         fill(0,0,255);
-        var t = "fps: " + floor(frameRate()) + ", points: " + particles.length + ", max points: " + particleCount + ", visibility: " + int(visibility / 2.55) + "%" + ", delete speed: " + deleteSpeed;
+        var t = "fps: " + floor(frameRate()) + ", points: " + particles.length + ", max points: " + particleCount + ", visibility: " + int(visibility / 2.55) + "%" + ", deletion speed: " + deletionSpeed;
         var t2 = "zoom: " + int(1.0/scl) + ", slices: " + numberOfSlices + ", noise pos: [" + nf(xMove,0,digitsAfterPoint) + "," + nf(yMove,0,digitsAfterPoint) + "," + nf(zMove,0,digitsAfterPoint) +"]"
         text(t,10,height-48);
         text(t2,10,height-18);
     }
     
+    // draw keyboard controls
     if(showHelp) {
         const startX = 20;
         const startY = 20;
@@ -93,9 +124,12 @@ function draw() {
         }
     }
 }
+// calculate force from noisefield
 function calculateForce(x,y,z) {
     return noise(x*scl+xMove,y*scl+yMove,z+zMove);
 }
+
+// add/delete/set particles
 function addParticles(num) {
     for(var i=0; i<num; i++) {
         particles.unshift(new Particle());
@@ -119,15 +153,19 @@ function setParticles(num) {
 }
 
 function resetCanvas() {
-    deleteParticles(particles.length);
-    setParticles(particleCount);
-    background(0);
+    deleteParticles(particles.length);  // delete all particles
+    setParticles(particleCount);        // add new particles
+    background(0);                      // draw over everything
 }
 function windowResized() {
     resizeCanvas(windowWidth, windowHeight);
 }
+
+// keyboard stuff
+// used keys: 
+//  A C D E F G H I K N P Q R S V W
+//  -> <- + - ? , .
 function keyPressed() {
-    console.log(keyCode);
     var needsReset = 0;
     switch(keyCode) {
         case 70: // F
@@ -223,15 +261,15 @@ function keyPressed() {
             }
             break;
         case 71: // G
-            deleteSpeed -= 1;
-            if(deleteSpeed < 0) {
-                deleteSpeed = 0;
+            deletionSpeed -= 1;
+            if(deletionSpeed < 0) {
+                deletionSpeed = 0;
             }
             break;
         case 72: // H
-            deleteSpeed += 1;
-            if(deleteSpeed > 255) {
-                deleteSpeed = 255;
+            deletionSpeed += 1;
+            if(deletionSpeed > 255) {
+                deletionSpeed = 255;
             }
             break;
         case 75: // K
