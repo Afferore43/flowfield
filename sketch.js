@@ -42,7 +42,7 @@ const maxspeed = 6;     // maxspeed of particles, independent of framerate
 
 const hueMultiplier = 500.0;    // particles will multiply noise result 
                                 // by this to get hue
-const accMultiplier = TWO_PI*4;
+const accMultiplier = 8 * Math.PI;
 /////////
 
 // position in noise field
@@ -53,16 +53,36 @@ var yMove = 0.0;
 var particles = []; // array for particles
 var timeLastFrame = 0.0;    // record time ellapsed since last frame to move noise 
                             // field with the same speed, independent of framerate
-const keyboard_controls = ["keyboard controls","","[f] fullscreen on/off","[i]* show/hide info", "[?]* show/hide keyboard controls", "[right/left arrow] add/subtract 50 from max points","[w/s/d/a/q/e] move flowfield (y+/y-/x+/x-/z+/z-)","[+/-] zoom in/out","[space] stop/start point movement","[n] stop/start flowfield movement","[r] set noise to random position", "[p] set point number to max points","[1-9] set point number to 1000-9000","[c/v]* change number of slices","[,/.] change particle visibility (less/more)", "[g/h] change deletion speed (slower/faster)", "[k] reset canvas", "", "* will reset canvas"];
+
+const keyboard_controls = ["keyboard controls",
+                           "",
+                           "[f] fullscreen on/off",
+                           "[i]* show/hide info", 
+                           "[?]* show/hide keyboard controls", 
+                           "[right/left arrow] add/subtract 50 from max points",
+                           "[w/s/d/a/q/e] move flowfield (y+/y-/x+/x-/z+/z-)",
+                           "[+/-] zoom in/out",
+                           "[space] stop/start point movement",
+                           "[n] stop/start flowfield movement",
+                           "[r] set noise to random position", 
+                           "[p] set point number to max points",
+                           "[1-9] set point number to 1000-9000",
+                           "[c/v]* change number of slices",
+                           "[,/.] change particle visibility (less/more)", 
+                           "[g/h] change deletion speed (slower/faster)", 
+                           "[k] reset canvas", 
+                           "", 
+                           "* will reset canvas"];
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
     
-    colorMode(HSB, 255);
-    
     timeLastFrame = millis();
-    addParticles(300);
+    
+    colorMode(HSB, 255);
     textSize(15);
+    
+    addParticles(300);
 }
 
 function draw() {
@@ -141,7 +161,6 @@ function deleteParticles(num) {
         particles.pop();
     }
 }
-
 function setParticles(num) {
     particleCount = num;
     var dif = particleCount - particles.length;
@@ -152,15 +171,16 @@ function setParticles(num) {
     }
 }
 
+// some helpers
 function resetCanvas() {
     deleteParticles(particles.length);  // delete all particles
     setParticles(particleCount);        // add new particles
     background(0);                      // draw over everything
+    moveParticles = true;               // start drawing
 }
 function windowResized() {
     resizeCanvas(windowWidth, windowHeight);
 }
-
 // keyboard stuff
 // used keys: 
 //  A C D E F G H I K N P Q R S V W

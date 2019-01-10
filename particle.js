@@ -2,11 +2,14 @@ function Particle() {
     this.pos = createVector(random(width), random(height));
     this.vel = createVector(0, 0);
     this.acc = createVector(0, 0);
-    this.h = 0;
-    this.z = int(random(numberOfSlices)) * sliceDistance;
+    this.hue = 0; // hue
+    
+    this.slice = int(random(numberOfSlices)) * sliceDistance;
+    
     this.prevPos = this.pos.copy();
 
-    this.update = function(timePassed) {
+    
+    this.update = function() {
         this.vel.add(this.acc);
         this.vel.limit(maxspeed);
         this.pos.add(this.vel);
@@ -16,19 +19,22 @@ function Particle() {
     this.applyForce = function(force) {
         this.acc.add(force);
     }
-  
     this.calculateForce = function() {
-        var force = calculateForce(this.pos.x,this.pos.y,this.z);
-        var vector = p5.Vector.fromAngle(force*accMultiplier);
-        this.applyForce(vector);
-        this.setHue(force);
+        var force = calculateForce(this.pos.x,this.pos.y,this.slice);
+        
+        this.setHue(force * hueMultiplier);
+        
+        var vector = p5.Vector.fromAngle(force * accMultiplier);
+
+        this.acc.add(vector);
     }
     this.setHue = function(force) {
-        this.h = force*hueMultiplier;
-        if (this.h > 255) {
-            this.h = this.h%256;
+        if (force > 255) {
+            this.hue = force % 256;
+        } else {
+            this.hue = force;
         }
-        stroke(this.h, 255, 255, visibility);
+        stroke(this.hue, 255, 255, visibility);
     }
     this.show = function() {
         line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
