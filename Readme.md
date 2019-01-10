@@ -6,4 +6,4 @@ Watch demo here: https://afferore43.github.io/flowfield/
 
 Press [?] for a list of available commands.
 
-![example image](/example_images/example_1.png)
+![example image](/example_images/example_1.jpg)
